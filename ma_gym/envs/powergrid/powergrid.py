@@ -3,8 +3,8 @@
 import gym
 from gym import spaces
 import numpy as np
-from ma_gym.envs.utils.action_space import MultiAgentActionSpace
-from ma_gym.envs.utils.observation_space import MultiAgentObservationSpace 
+from ..utils.action_space import MultiAgentActionSpace
+from ..utils.observation_space import MultiAgentObservationSpace 
 import random
 
 lowest_generation_capacity = 10**-4   #per second
