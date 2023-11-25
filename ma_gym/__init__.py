@@ -57,8 +57,8 @@ register(
     entry_point='ma_gym.envs.pong_duel:PongDuel',
 )
 register(
-    id='PowerGrid-v0',
-    entry_point='ma_gym.envs.powergrid:PowerGrid',
+    id='PowerGrid-v1',
+    entry_point='ma_gym.envs.power_grid:PowerGrid',
 )
 
 for game_info in [[(5, 5), 2, 1], [(7, 7), 4, 2]]:  # [(grid_shape, predator_n, prey_n),..]
