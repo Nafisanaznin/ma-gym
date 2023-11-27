@@ -68,21 +68,26 @@ class PowerGrid(gym.Env):
             "Invalid action! It was expected to be list of {}" \
             " dimension but was found to be of {}".format(self.n_agents, len(agents_action))
     self.step_count += 1
+
     #the observation part. we do only need to sample the load at every time step. we will change the weather at every 1800th step
     if(self.step_count % 1800 == 0):
       self.current_weather = random.uniform(1, 8)
     observations = self.observation_space.sample()
     for x in observations:
       x[1] = self.current_weather
+
     #rewards
     rewards = [0 for _ in range(self.n_agents)]
+
     for agent_i, action in enumerate(agents_action):
+
       #charge battery and load from battery
       if(action == 0):
         generated_power = self.highest_generation_capacities[agent_i] - ((self.highest_generation_capacities[agent_i] * observations[agent_i][1]) / 8)
         self.battery_current[agent_i] += generated_power
         rewards[agent_i] += 100 * (generated_power - observations[agent_i][0])
         self.battery_current[agent_i] -= generated_power
+
       #charge battery and load from microgrid
       elif(action == 1):
         generated_power = self.highest_generation_capacities[agent_i] - ((self.highest_generation_capacities[agent_i] * observations[agent_i][1]) / 8)
@@ -93,12 +98,14 @@ class PowerGrid(gym.Env):
           rewards[agent_i] += 100 * 0 + ((-1) * load * self.buy_from_microgrid_cost) 
         else:
           rewards[agent_i] += 100 * ((-1) * load)  # not sure about the logic
+
       #charge battery and load from grid
       elif(action == 2):
         generated_power = self.highest_generation_capacities[agent_i] - ((self.highest_generation_capacities[agent_i] * observations[agent_i][1]) / 8)
         self.battery_current[agent_i] += generated_power
         load = observations[agent_i][0]
         rewards[agent_i] = 100 * 0 + ((-1) * load * self.buy_from_grid_cost) # i guess, eikhane takar hishab ashbe
+      
       #give to micro grid and load from battery
       elif(action == 3):
         generated_power = self.highest_generation_capacities[agent_i] - ((self.highest_generation_capacities[agent_i] * observations[agent_i][1]) / 8)
@@ -109,6 +116,7 @@ class PowerGrid(gym.Env):
           rewards[agent_i] += (100 * 0) + generated_power * self.sell_to_microgrid_cost
         else:
           rewards[agent_i] += (100 * (-1) * load) + generated_power * self.sell_to_microgrid_cost
+      
       #give to micro grid and load from micro grid
       elif(action == 4):
         generated_power = self.highest_generation_capacities[agent_i] - ((self.highest_generation_capacities[agent_i] * observations[agent_i][1]) / 8)
@@ -119,12 +127,14 @@ class PowerGrid(gym.Env):
           rewards[agent_i] += (100 * 0) + self.sell_to_microgrid_cost
         else:
           rewards[agent_i] + (100 * (-1)* load) + self.sell_to_microgrid_cost
-       #give to micro grid and load from grid 
+       
+      #give to micro grid and load from grid 
       elif(action == 5):
         generated_power = self.highest_generation_capacities[agent_i] - ((self.highest_generation_capacities[agent_i] * observations[agent_i][1]) / 8)
         load = observations[agent_i][0]
         self.microgrid_extra_power += generated_power
         rewards[agent_i] = (100 * 0) + (generated_power * self.sell_to_microgrid_cost) + ((-1) * load * self.buy_from_grid_cost)
+      
       #give it to grid and load from battery
       elif(action == 6):
         generated_power = self.highest_generation_capacities[agent_i] - ((self.highest_generation_capacities[agent_i] * observations[agent_i][1]) / 8)
@@ -134,6 +144,7 @@ class PowerGrid(gym.Env):
           rewards[agent_i] += (100 * 0) + (generated_power * self.sell_to_grid_cost)
         else:
           rewards[agent_i] += (100 * (-1) * load) + (generated_power *self.sell_to_grid_cost )
+      
       #give it to grid and load from micro grid
       elif(action == 7):
         generated_power = self.highest_generation_capacities[agent_i] - ((self.highest_generation_capacities[agent_i] * observations[agent_i][1]) / 8)
@@ -143,6 +154,7 @@ class PowerGrid(gym.Env):
           rewards[agent_i] += (100 * 0) + (generated_power * self.sell_to_grid_cost)
         else:
           rewards[agent_i] += (100 * (-1) * load) + (generated_power * self.buy_from_microgrid_cost)
+      
       #give it to grid and load from grid
       elif(action == 8):
         generated_power = self.highest_generation_capacities[agent_i] - ((self.highest_generation_capacities[agent_i] * observations[agent_i][1]) / 8)
