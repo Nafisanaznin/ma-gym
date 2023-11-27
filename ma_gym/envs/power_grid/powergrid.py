@@ -80,7 +80,6 @@ class PowerGrid(gym.Env):
     rewards = [0 for _ in range(self.n_agents)]
 
     for agent_i, action in enumerate(agents_action):
-
       #charge battery and load from battery
       if(action == 0):
         generated_power = self.highest_generation_capacities[agent_i] - ((self.highest_generation_capacities[agent_i] * observations[agent_i][1]) / 8)
