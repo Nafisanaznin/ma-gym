@@ -26,7 +26,7 @@ class PowerGrid(gym.Env):
   #7->After generating, give it to grid and load from micro grid
   #8->After generating, give it to grid and load from grid
 
-  def __init__(self, n_max = 5, buy_from_grid_cost = 15, sell_to_grid_cost = 8, buy_from_microgrid_cost = 10, sell_to_microgrid_cost = 10, max_steps: int = 10000) -> None:
+  def __init__(self, n_max = 5, buy_from_grid_cost = 15, sell_to_grid_cost = 8, buy_from_microgrid_cost = 10, sell_to_microgrid_cost = 10, max_steps: int = 10000000) -> None:
     assert 4 <= n_max <= 8, "n_max should be range in [4,8]"
     self.n_agents = n_max
     self.max_steps = max_steps
@@ -84,8 +84,12 @@ class PowerGrid(gym.Env):
       if(action == 0):
         generated_power = self.highest_generation_capacities[agent_i] - ((self.highest_generation_capacities[agent_i] * observations[agent_i][1]) / 8)
         self.battery_current[agent_i] += generated_power
-        rewards[agent_i] += 100 * (generated_power - observations[agent_i][0])
-        self.battery_current[agent_i] -= generated_power
+        load = observations[agent_i][0]
+        if(generated_power >= load):
+          self.battery_current[agent_i] -= load
+          rewards[agent_i] += 100 * 0
+        else:
+          rewards[agent_i] += 100 * ((-1)* observations[agent_i][0])
 
       #charge battery and load from microgrid
       elif(action == 1):
@@ -96,7 +100,7 @@ class PowerGrid(gym.Env):
           self.microgrid_extra_power -= load
           rewards[agent_i] += 100 * 0 + ((-1) * load * self.buy_from_microgrid_cost) 
         else:
-          rewards[agent_i] += 100 * ((-1) * load)  # not sure about the logic
+          rewards[agent_i] += 100 * ((-1) * load)  
 
       #charge battery and load from grid
       elif(action == 2):
@@ -159,17 +163,15 @@ class PowerGrid(gym.Env):
         generated_power = self.highest_generation_capacities[agent_i] - ((self.highest_generation_capacities[agent_i] * observations[agent_i][1]) / 8)
         load = observations[agent_i][0]
         rewards[agent_i] += (100 * 0) + (generated_power * (self.sell_to_grid_cost)) + (generated_power * (-1) * self.buy_from_grid_cost) 
-        self._total_episode_reward[agent_i] += rewards[agent_i]
     return observations, rewards, {}, {}
     
   def reset(self):
-    self.step_count = None
+    self.step_count = 0
     self.microgrid_extra_power = 0
     self.battery_capacities = self.battery_capacity_seleciton()
     self.battery_current = [0 for _ in range(self.n_agents)]
     self.highest_generation_capacities = self.highest_generate_capacity_selection(lowest_generation_capacity, highest_generation_capacity)
     self.current_weather = random.uniform(1,8)
-    self._total_episode_reward = None
     self.viewer = None   
     return self.observation_space.sample()
   
