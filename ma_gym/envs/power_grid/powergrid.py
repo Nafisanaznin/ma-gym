@@ -26,11 +26,12 @@ class PowerGrid(gym.Env):
   #7->After generating, give it to grid and load from micro grid
   #8->After generating, give it to grid and load from grid
 
-  def __init__(self, n_max = 5, buy_from_grid_cost = 15, sell_to_grid_cost = 8, buy_from_microgrid_cost = 10, sell_to_microgrid_cost = 10, max_steps: int = 10000000) -> None:
+  def __init__(self, n_max = 5, buy_from_grid_cost = 15, step_cost = 0.0, sell_to_grid_cost = 8, buy_from_microgrid_cost = 10, sell_to_microgrid_cost = 10, max_steps: int = 1000) -> None:
     assert 4 <= n_max <= 8, "n_max should be range in [4,8]"
     self.n_agents = n_max
     self.max_steps = max_steps
     self.step_count = 0
+    self.step_cost = step_cost
     self.buy_from_grid_cost = buy_from_grid_cost
     self.sell_to_grid_cost = sell_to_grid_cost
     self.buy_from_microgrid_cost = buy_from_microgrid_cost
@@ -40,7 +41,8 @@ class PowerGrid(gym.Env):
     self.battery_current = [0 for _ in range(self.n_agents)]
     self.highest_generation_capacities = self.highest_generate_capacity_selection(lowest_generation_capacity, highest_generation_capacity)
     self.current_weather = random.uniform(1,8)
-    self._total_episode_reward = 0
+    self._total_episode_reward = [0 for _ in range(self.n_agents)]
+    self._agent_dones = None
     self.viewer = None   
     self.action_space = MultiAgentActionSpace([spaces.Discrete(9) for _ in range(self.n_agents)])
     self.observation_space = MultiAgentObservationSpace([spaces.Box(low=np.array([0.0002, 1.00]), high=np.array([0.0005, 8.00]), dtype=np.float32)
@@ -68,7 +70,7 @@ class PowerGrid(gym.Env):
             "Invalid action! It was expected to be list of {}" \
             " dimension but was found to be of {}".format(self.n_agents, len(agents_action))
     self.step_count += 1
-
+    
     #the observation part. we do only need to sample the load at every time step. we will change the weather at every 1800th step
     if(self.step_count % 1800 == 0):
       self.current_weather = random.uniform(1, 8)
@@ -163,15 +165,26 @@ class PowerGrid(gym.Env):
         generated_power = self.highest_generation_capacities[agent_i] - ((self.highest_generation_capacities[agent_i] * observations[agent_i][1]) / 8)
         load = observations[agent_i][0]
         rewards[agent_i] += (100 * 0) + (generated_power * (self.sell_to_grid_cost)) + (generated_power * (-1) * self.buy_from_grid_cost) 
-    return observations, rewards, {}, {}
+
+    #if step is greater than max step
+    if self.step_count >= self.max_steps:
+      for i in range(self.n_agents):
+        self._agent_dones[i] = True
+
+    #total episode reward addition
+    for i in range(self.n_agents):
+            self._total_episode_reward[i] += rewards[i]
+    return observations, rewards, self._agent_dones, {}
     
   def reset(self):
     self.step_count = 0
     self.microgrid_extra_power = 0
+    self._total_episode_reward = [0 for _ in range(self.n_agents)]
     self.battery_capacities = self.battery_capacity_seleciton()
     self.battery_current = [0 for _ in range(self.n_agents)]
     self.highest_generation_capacities = self.highest_generate_capacity_selection(lowest_generation_capacity, highest_generation_capacity)
     self.current_weather = random.uniform(1,8)
+    self._agent_dones = [False for _ in range(self.n_agents)]
     self.viewer = None   
     return self.observation_space.sample()
   
